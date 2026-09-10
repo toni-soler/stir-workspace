@@ -1,0 +1,12 @@
+/stir-backend/
+/stir-doc/
+/stir-frontend/
+/stir-main/
+.local/
+vendor/
+node_modules/
+target/
+dist/
+__pycache__/
+*.log
+.env

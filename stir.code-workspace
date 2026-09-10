@@ -1,0 +1,116 @@
+{
+  "folders": [
+    {
+      "name": "stir-workspace",
+      "path": "."
+    },
+    {
+      "name": "stir-doc",
+      "path": "stir-doc"
+    },
+    {
+      "name": "stir-backend",
+      "path": "stir-backend"
+    },
+    {
+      "name": "stir-frontend",
+      "path": "stir-frontend"
+    },
+    {
+      "name": "stir-main",
+      "path": "stir-main"
+    }
+  ],
+  "settings": {
+    "java.autobuild.enabled": false,
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "terminal.integrated.cwd": "${workspaceFolder:stir-main}"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "STIR: initialize",
+        "type": "shell",
+        "command": "python scripts/initialize.py",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: start",
+        "type": "shell",
+        "command": "docker compose up -d --build",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: status",
+        "type": "shell",
+        "command": "docker compose ps",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: smoke",
+        "type": "shell",
+        "command": "python scripts/smoke.py",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: stop",
+        "type": "shell",
+        "command": "docker compose down",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: audit",
+        "type": "shell",
+        "command": "python scripts/audit-public.py",
+        "options": {
+          "cwd": "${workspaceFolder:stir-main}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: validate backend",
+        "type": "shell",
+        "command": "mvn -s .mvn/public-settings.xml clean verify",
+        "options": {
+          "cwd": "${workspaceFolder:stir-backend}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: validate frontend",
+        "type": "shell",
+        "command": "node scripts/validate-all.mjs",
+        "options": {
+          "cwd": "${workspaceFolder:stir-frontend}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "STIR: validate",
+        "dependsOrder": "sequence",
+        "dependsOn": [
+          "STIR: validate backend",
+          "STIR: validate frontend",
+          "STIR: audit"
+        ],
+        "problemMatcher": []
+      }
+    ]
+  }
+}
