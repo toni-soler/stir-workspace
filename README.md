@@ -1,4 +1,4 @@
-# STIR workspace — 0.1.0-SNAPSHOT
+# STIR workspace — 0.2.0-SNAPSHOT
 
 Development coordination for Sistema Transparente de Intercambio de Recursos.
 This directory is the independent **stir-workspace** repository, locally named **stir**.
