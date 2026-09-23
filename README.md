@@ -3,7 +3,15 @@
 Development coordination for Sistema Transparente de Intercambio de Recursos.
 This directory is the independent **stir-workspace** repository, locally named **stir**.
 
-Open `stir.code-workspace`. Four sibling repositories inside this folder remain independent Git histories: stir-doc, stir-backend, stir-frontend and stir-main. They are deliberately ignored here, not submodules or gitlinks. Deployment, Docker Compose and public upstream initialization belong to stir-main. No remote URLs have been assigned to STIR yet - see stir-doc/VALIDATION.md's 0.5 section for exactly what that blocks.
+Open `stir.code-workspace`. Four sibling repositories inside this folder remain independent Git histories: stir-doc, stir-backend, stir-frontend and stir-main. They are deliberately ignored here, not submodules or gitlinks. Deployment, Docker Compose and public upstream initialization belong to stir-main.
+
+Official public repositories:
+
+- https://github.com/toni-soler/stir-workspace
+- https://github.com/toni-soler/stir-doc
+- https://github.com/toni-soler/stir-backend
+- https://github.com/toni-soler/stir-frontend
+- https://github.com/toni-soler/stir-main
 
 Run the STIR: initialize, validate, start, status, smoke and stop tasks. Requirements and local credentials instructions are in stir-main/README.md; architecture and evidence are in stir-doc; production deployment operations are in stir-main/DEPLOYMENT.md.
 
