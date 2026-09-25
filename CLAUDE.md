@@ -61,29 +61,42 @@ destructive, adversarial, or synthetic (manipulation drills, governance
 recovery, fake evidence). Do not contaminate the real `STIR` tenant's market
 evidence with test data unless there is no alternative — and say so if you do.
 
-**Platform administration is not community governance — but the permission
-layer alone does not enforce that.** Correction to an earlier claim in this
-file: idax-core's `PermissionService.hasPermission(user, permission)`
-unconditionally returns `true` for `user.isSuperuser()`, for every permission
-string, confirmed by decompiling the vendored jar and empirically (see
-`GOVERNANCE_CAPTURE_THREAT_MODEL.md`). `@PreAuthorize("@permissionService.
-hasPermission('stir.references.*')")` alone therefore does **not** keep a
-platform SuperAdmin out — `ReferenceController` and `MarketIntegrityController`
-both add an explicit `authentication.principal.superuser` rejection in their
-shared `tenant()` `@ModelAttribute` to close that. `SevenKeysController` has
-no such guard and does not need one: its real protection is the Ed25519
-signature requirement, independent of the HTTP permission layer, so a
-superuser token still cannot forge a seat's vote or Guardian action — a real
-Testcontainers test
+**Platform capability grants must never be interpreted as community
+governance authority.** idax-core's `PermissionService.hasPermission(user,
+permission)` unconditionally returns `true` for `user.isSuperuser()`, for
+every permission string, confirmed by decompiling the vendored jar and
+empirically (see `GOVERNANCE_CAPTURE_THREAT_MODEL.md`). `@PreAuthorize`
+alone therefore cannot be the boundary for a community-governed mutation.
+The fix is `ReferenceService.requireCommunityAuthority(CurrentUser user)` — a
+single, reusable, package-private static check called as the *first
+statement* inside every sensitive mutation
+(`ReferenceService.create/policy/propose/publish`,
+`MarketIntegrityService.signal/decide`), so the rejection holds at the
+service layer regardless of which controller — or any future non-HTTP
+caller — reaches it. `ReferenceController`/`MarketIntegrityController` call
+the same method again at the top of their handlers as defense-in-depth, not
+a duplicated implementation. Ordinary reads on both controllers are
+deliberately left permission-gated only — this check protects mutation
+authority, not all of STIR. `SevenKeysController` has no such guard and does
+not need one: its real protection is the Ed25519 signature requirement,
+independent of the HTTP permission layer, so a superuser token still cannot
+forge a seat's vote or Guardian action — a real Testcontainers test
 (`SevenKeysPostgresTest.adminDatabaseRoleCannotRotateOrUnsuspendConstitutionalSeat`)
 proves the DB-role side of that (the constitutional-mutation columns are
 revoked from `idax_admin`, `V9__restrict_constitutional_mutation_role.sql`).
-Any other `stir.*`-gated controller added later inherits the superuser
-bypass until it adds the same explicit rejection — check for it, don't assume
-`@PreAuthorize` alone is sufficient. Creating a tenant never bootstraps Seven
-Keys — bootstrap is a separate, explicitly permissioned, real-Ed25519-signed
-HTTP call (`stir.references.publish`). No server-side secret-key generation exists or
-should be added.
+Any other `stir.*`-gated controller/service added later inherits the
+superuser bypass until it adds the same explicit `requireCommunityAuthority`-
+style check at its own service layer — check for it, don't assume
+`@PreAuthorize` alone is sufficient. `ReferencePostgresTest` proves the
+service-layer rejection directly (no controller in the path), a
+community-authorized actor succeeding at the same operation, and that
+switching tenant context grants no cross-tenant authority; the HTTP E2E
+(`community_value_governance_e2e.py`) proves the same six mutations reject a
+real superuser session while that session's legitimate platform actions
+(role creation, user provisioning) still succeed. Creating a tenant never
+bootstraps Seven Keys — bootstrap is a separate, explicitly permissioned,
+real-Ed25519-signed HTTP call (`stir.references.publish`). No server-side
+secret-key generation exists or should be added.
 
 ## Economic exchange boundary (STIR ↔ osTRIS)
 
