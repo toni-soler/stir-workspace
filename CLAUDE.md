@@ -61,17 +61,28 @@ destructive, adversarial, or synthetic (manipulation drills, governance
 recovery, fake evidence). Do not contaminate the real `STIR` tenant's market
 evidence with test data unless there is no alternative — and say so if you do.
 
-**Platform administration is not community governance.** A superuser can
-create/enable/disable/rename a tenant. That grants nothing over Seven Keys,
-Guardian, references, or RLS-protected data. Verified: Seven Keys endpoints
-check `TenantContext`-scoped `stir.references.*` permissions, never the
-superuser principal flag; the DB role platform actions run under
-(`idax_admin`) has its constitutional-mutation columns explicitly revoked
-(`V9__restrict_constitutional_mutation_role.sql`); a real Testcontainers test
+**Platform administration is not community governance — but the permission
+layer alone does not enforce that.** Correction to an earlier claim in this
+file: idax-core's `PermissionService.hasPermission(user, permission)`
+unconditionally returns `true` for `user.isSuperuser()`, for every permission
+string, confirmed by decompiling the vendored jar and empirically (see
+`GOVERNANCE_CAPTURE_THREAT_MODEL.md`). `@PreAuthorize("@permissionService.
+hasPermission('stir.references.*')")` alone therefore does **not** keep a
+platform SuperAdmin out — `ReferenceController` and `MarketIntegrityController`
+both add an explicit `authentication.principal.superuser` rejection in their
+shared `tenant()` `@ModelAttribute` to close that. `SevenKeysController` has
+no such guard and does not need one: its real protection is the Ed25519
+signature requirement, independent of the HTTP permission layer, so a
+superuser token still cannot forge a seat's vote or Guardian action — a real
+Testcontainers test
 (`SevenKeysPostgresTest.adminDatabaseRoleCannotRotateOrUnsuspendConstitutionalSeat`)
-proves it. Creating a tenant never bootstraps Seven Keys — bootstrap is a
-separate, explicitly permissioned, real-Ed25519-signed HTTP call
-(`stir.references.publish`). No server-side secret-key generation exists or
+proves the DB-role side of that (the constitutional-mutation columns are
+revoked from `idax_admin`, `V9__restrict_constitutional_mutation_role.sql`).
+Any other `stir.*`-gated controller added later inherits the superuser
+bypass until it adds the same explicit rejection — check for it, don't assume
+`@PreAuthorize` alone is sufficient. Creating a tenant never bootstraps Seven
+Keys — bootstrap is a separate, explicitly permissioned, real-Ed25519-signed
+HTTP call (`stir.references.publish`). No server-side secret-key generation exists or
 should be added.
 
 ## Economic exchange boundary (STIR ↔ osTRIS)
@@ -87,12 +98,26 @@ Full design: `stir-doc/COMMUNITY_VALUE_REFERENCES.md`,
 `MARKET_INTEGRITY.md`, `SEVEN_KEYS_GOVERNANCE.md`,
 `GOVERNANCE_CAPTURE_THREAT_MODEL.md`, `CREDENTIAL_RECOVERY.md`. Validation
 record: `VALIDATION_COMMUNITY_VALUE_REFERENCES.md`,
-`VALIDATION_MARKET_INTEGRITY.md`.
+`VALIDATION_MARKET_INTEGRITY.md`, `VALIDATION_SEVEN_KEYS_UI.md`,
+`VALIDATION_COMMUNITY_VALUE_GOVERNANCE.md`.
 
 Five distinct concepts, never collapse them: unit of account → observation →
 community value reference → agreed value → committed ledger entry. An
 observation does not auto-publish a reference; a reference does not bind
 either party; the Agreement keeps the value actually agreed.
+
+The full publisher toolkit has a UI now (`stir-frontend/src/references.jsx`):
+propose/publish (pre-existing), plus raw/eligible/excluded evidence breakdown
+with reason codes (`EvidenceBreakdown`, reading the private
+`observations()`/`evidenceManifest()` endpoints — full participant/amount
+detail, gated on `stir.references.publish`, never on read), reference policy
+configuration inside constitutional floors (`PolicyForm`), and the market
+integrity SIGNAL→UNDER_REVIEW→FINAL/DISMISSED review workflow
+(`IntegrityPanel`). A same-day observation is structurally invisible to
+`evidence-manifest` (`snapshot()`'s SQL filters `observed_at < cutoff`) —
+don't design a test or a UI affordance that expects same-day eligibility to
+change live; `VALIDATION_COMMUNITY_VALUE_GOVERNANCE.md` explains why and what
+that means for testing.
 
 Seven Keys: exactly 7 constitutional seats per tenant+community authority
 (`stir.constitutional_authority`, unique on `(tenant_id, community_id)`), plus
