@@ -126,9 +126,30 @@ field quietly settable to 0 through an ordinary policy API).
    (`ACCOUNTS_ONLY_RELATED_ACCOUNTS_UNKNOWN`). A lawful, privacy-preserving
    adapter is needed before automated identity-cluster claims are anything
    more than an unverified signal.
+3. **Catastrophic multi-key recovery** — losing two-plus seat credentials at
+   once (or a seat plus the Guardian) has no recovery path: same-controller
+   rotation needs the Guardian + the other 6-of-6 active seats, and there is
+   deliberately no fallback threshold, master key, or SuperAdmin path around
+   that. Fail-closed by design (`GOVERNANCE_CAPTURE_THREAT_MODEL.md`); a real
+   design almost certainly needs out-of-band, real-world re-attestation of
+   seat-holder identity before reinstating a credential.
 
-If a task needs either, stop and present alternatives — do not design a
+If a task needs any of these, stop and present alternatives — do not design a
 private workaround.
+
+## Seven Keys custody — what the guarantees actually are
+
+Non-extractable WebCrypto (`governance-signer.js`, `signer.js`) means the raw
+key bytes cannot be exported off the device holding them — real, but it does
+not mean the key can't be misused *in place* by a compromised client (a
+malicious extension, a compromised dependency/OS could still ask the
+`CryptoKey` to sign an attacker-chosen message). Never phrase this guarantee
+as "cannot be used by an attacker." Same-device bootstrap (all 7 seats + the
+Guardian generated/signed in one browser) is a dev/E2E/demo/`stir-pruebas`
+fixture, not a real ceremony — one device holding many credentials is not
+seven independent custodians. The bootstrap UI says so; keep it saying so,
+and never let UI copy imply an independence guarantee that a same-device flow
+does not provide.
 
 ## Gates before declaring a domain increment done
 
