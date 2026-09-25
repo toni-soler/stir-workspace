@@ -109,7 +109,8 @@ participant's own signature; never simulate or bypass it.
 
 Full design: `stir-doc/COMMUNITY_VALUE_REFERENCES.md`,
 `MARKET_INTEGRITY.md`, `SEVEN_KEYS_GOVERNANCE.md`,
-`GOVERNANCE_CAPTURE_THREAT_MODEL.md`, `CREDENTIAL_RECOVERY.md`. Validation
+`GOVERNANCE_CAPTURE_THREAT_MODEL.md`, `CREDENTIAL_RECOVERY.md`,
+`PARTICIPANT_INDEPENDENCE.md`. Validation
 record: `VALIDATION_COMMUNITY_VALUE_REFERENCES.md`,
 `VALIDATION_MARKET_INTEGRITY.md`, `VALIDATION_SEVEN_KEYS_UI.md`,
 `VALIDATION_COMMUNITY_VALUE_GOVERNANCE.md`.
@@ -159,11 +160,20 @@ field quietly settable to 0 through an ordinary policy API).
    state/digest, usable by `REPLACE_CONTROLLER` without STIR-specific
    semantics leaking into osTRIS. Until it exists, controller replacement
    stays blocked.
-2. **Identity continuity / related-account clustering** — STIR sees accounts
-   and relationships between accounts, not independent people
-   (`ACCOUNTS_ONLY_RELATED_ACCOUNTS_UNKNOWN`). A lawful, privacy-preserving
-   adapter is needed before automated identity-cluster claims are anything
-   more than an unverified signal.
+2. **Identity continuity / related-account clustering — partially closed.**
+   `PARTICIPANT_INDEPENDENCE.md`: STIR now consumes osTRIS's own real,
+   already-shipped private continuity decisions (`ostris.risk_subject`/
+   `IdentityContinuityDecision`) through a minimal, publisher-triggered,
+   non-live-reused projection (`stir.participant_independence_projection`),
+   correcting diversity/concentration down when osTRIS has confirmed two
+   accounts related. What remains open: osTRIS never affirmatively
+   certifies independence (only ever confirms/contests/rejects one
+   relatedness claim), so accounts with no data stay honestly
+   `INDEPENDENCE_UNKNOWN`, never assumed independent; a fully automatic
+   (non-publisher-triggered) refresh would need a new STIR→osTRIS service
+   credential, deliberately not built; and relationship-diversity counting
+   is not yet cluster-aware (see that doc's "deliberately not built"
+   section for the exact remaining gaps).
 3. **Catastrophic multi-key recovery** — losing two-plus seat credentials at
    once (or a seat plus the Guardian) has no recovery path: same-controller
    rotation needs the Guardian + the other 6-of-6 active seats, and there is
