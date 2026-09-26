@@ -110,10 +110,26 @@ participant's own signature; never simulate or bypass it.
 Full design: `stir-doc/COMMUNITY_VALUE_REFERENCES.md`,
 `MARKET_INTEGRITY.md`, `SEVEN_KEYS_GOVERNANCE.md`,
 `GOVERNANCE_CAPTURE_THREAT_MODEL.md`, `CREDENTIAL_RECOVERY.md`,
-`PARTICIPANT_INDEPENDENCE.md`. Validation
+`PARTICIPANT_INDEPENDENCE.md`, `ORDINARY_GOVERNANCE.md`. Validation
 record: `VALIDATION_COMMUNITY_VALUE_REFERENCES.md`,
 `VALIDATION_MARKET_INTEGRITY.md`, `VALIDATION_SEVEN_KEYS_UI.md`,
-`VALIDATION_COMMUNITY_VALUE_GOVERNANCE.md`.
+`VALIDATION_COMMUNITY_VALUE_GOVERNANCE.md`,
+`VALIDATION_ORDINARY_GOVERNANCE.md`.
+
+**Ordinary community governance** (`ORDINARY_GOVERNANCE.md`) is a real,
+quorum-based, non-constitutional decision process, opt-in per community
+(`stir.community_governance_settings`, default off - every delegated-
+publisher flow stays unchanged until a community turns it on). Its
+electorate (`stir.community_governance_member`) is a wholly STIR-owned
+roster, never derived from IDAX Core/Shell roles or permissions (no such
+"everyone holding permission P" query exists safely without a new
+cross-service credential) - so platform SuperAdmin, the Guardian, and a
+Seven Keys constitutional seat all grant no vote here by themselves; only
+explicit membership does. Execution reuses the exact same
+`ReferenceService.publishDirect()`/`policyDirect()` methods the delegated-
+publisher path already validates - a constitutional-floor-crossing proposal
+is refused even after unanimous approval, by construction. There is no
+`approveProposal(id)` anywhere in this codebase.
 
 Five distinct concepts, never collapse them: unit of account → observation →
 community value reference → agreed value → committed ledger entry. An
