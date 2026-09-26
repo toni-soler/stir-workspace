@@ -169,6 +169,46 @@ Never introduce `superAdmin`/`masterKey`/`rootOverride`/`forceReference`/
 `lowerThresholdForEmergency` or any semantic equivalent (e.g. a threshold
 field quietly settable to 0 through an ordinary policy API).
 
+## Community extension boundary (FreeFolk Market and other distributions)
+
+Full design: `stir-doc/COMMUNITY_EXTENSION_GUIDE.md`,
+`FREEFOLK_MARKET_PREPARATION.md`, `MIXED_CONSIDERATION_EXTENSION.md`.
+Validation: `VALIDATION_COMMUNITY_EXTENSION.md`.
+
+STIR is upstream; FreeFolk Market (or any other distribution) is never a
+fork. The dependency is always `distribution → STIR`, never the reverse —
+no distribution-specific code, table, or import belongs in STIR or osTRIS.
+What's actually upstream today, all additive and backward-compatible:
+
+- `stir-frontend/src/catalog-client.js` — a dependency-free ESM catalog/
+  offer contract (`CATALOG_CONTRACT_VERSION`). STIR's own UI
+  (`listing.jsx`/`extension.jsx`) is its first consumer, not a parallel
+  copy; a second presentation (`examples/community-catalog/`) proves reuse
+  without copying internal sources.
+- An opaque external-contract commitment on `Offer`/`Agreement`
+  (`externalContractNamespace`+`externalContractDigest`, both-or-neither,
+  frozen into the snapshot at `schemaVersion=3`). STIR never interprets
+  it — no FIAT, fee, or fiscal semantics anywhere in STIR/osTRIS.
+- A minimal, honest version-compatibility surface on the public
+  `GET /api/stir/instance`: `stirVersion`, `catalogContractVersion`,
+  `externalContractSchemaVersion` — the only versions STIR actually
+  enforces, not a capability-registry framework. A distribution's own
+  lock/compatibility record decides what it requires; STIR only declares
+  what's deployed right now.
+
+Explicitly not built, and not to be built speculatively: a generic plugin
+framework, a capabilities-discovery endpoint beyond the three version
+fields above, any FIAT/PSP/fee/fiscal-valuation code in STIR core or
+osTRIS, or SQL/privileged-service credentials granted to an extension. An
+extension can add capabilities; it can never bypass RLS, tenant isolation,
+Community Authority, Ordinary Governance, Participant Independence, Market
+Integrity, Seven Keys, constitutional bounds, or osTRIS's own
+authorization/invariants — platform SuperAdmin is not Community Governance
+Authority for an extension any more than it is for STIR itself. The osTRIS
+`purpose=SETTLEMENT` value used by an external marketplace-fee experiment
+is an open SPEC GAP — `OSTRIS_INTEGRATION.md` gives it no support beyond
+STIR's own `purpose=EXCHANGE`; do not invent or ship code that sends it.
+
 ## Standing SPEC GAPs (do not improvise past these)
 
 1. **Final-resolution verification contract** — a generic, privacy-preserving
@@ -187,9 +227,15 @@ field quietly settable to 0 through an ordinary policy API).
    relatedness claim), so accounts with no data stay honestly
    `INDEPENDENCE_UNKNOWN`, never assumed independent; a fully automatic
    (non-publisher-triggered) refresh would need a new STIR→osTRIS service
-   credential, deliberately not built; and relationship-diversity counting
-   is not yet cluster-aware (see that doc's "deliberately not built"
-   section for the exact remaining gaps).
+   credential, deliberately not built. Relationship-diversity counting is
+   now cluster-aware for the hub-sharing-a-cluster pattern
+   (`clusterAdjustedRelationships`/`assuredIndependentRelationships`/
+   `unknownRelationships`, reported separately, never conflated) and
+   refresh-coverage integrity has its own reproducible reason
+   (`INSUFFICIENT_INDEPENDENCE_COVERAGE`) rather than an estimate — see
+   that doc's "Hardening" sections for what's covered and what remains
+   open (cluster identity shared across different account pairs with no
+   common hub).
 3. **Catastrophic multi-key recovery** — losing two-plus seat credentials at
    once (or a seat plus the Guardian) has no recovery path: same-controller
    rotation needs the Guardian + the other 6-of-6 active seats, and there is
