@@ -169,6 +169,52 @@ Never introduce `superAdmin`/`masterKey`/`rootOverride`/`forceReference`/
 `lowerThresholdForEmergency` or any semantic equivalent (e.g. a threshold
 field quietly settable to 0 through an ordinary policy API).
 
+## Consent and retention for reference evidence
+
+Full design: `stir-doc/CONSENT_RETENTION.md`. Validation:
+`VALIDATION_CONSENT_RETENTION.md`.
+
+Four questions, never collapsed into one: having a datum
+(`reference_observation`, always recorded regardless of consent) → having
+permission to use it (`reference_consent`/`reference_consent_event`,
+purpose-specific, captured automatically at Agreement acceptance from the
+existing bilateral `shareReferenceObservation` flow, withdrawable later by
+either party as a personal, self-service right) → still being allowed to
+retain it (`retention_policy`, versioned, community-scoped, floor
+`RetentionService.MINIMUM_RETENTION_PERIOD_DAYS = 90` as a **code constant**,
+deliberately not a Seven Keys constitutional field) → still eligible as
+current evidence (`EvidenceAnalysis`'s existing live exclusion set, now also
+`CONSENT_WITHDRAWN`, never rewriting a cached `reference_snapshot`).
+
+**Consent withdrawal never rewrites history.** `aggregate_consent` frozen on
+an observation at acceptance time is never mutated; withdrawal only ever
+changes eligibility for a future, not-yet-cached daily cutoff via a
+separate, live-queried exclusion set threaded into the same
+`finalExclusions` map Market Integrity already used - `FINAL_INTEGRITY_FINDING`
+always outranks `CONSENT_WITHDRAWN` in the reason shown, so withdrawing
+consent can never look like erasing evidence of manipulation.
+
+**Retention's one real action, anonymization, has a dedicated narrow
+trigger.** `reference_observation` was fully append-only (V5); rather than
+weaken that, it now has its own `reject_reference_observation_mutation()`
+trigger permitting *exactly one* transition
+(`participant_a`/`participant_b` → `NULL`, `anonymized_at`/`anonymized_by`
+set, nothing else ever changes, no `DELETE` ever allowed) - not even a real
+Postgres superuser can bypass it without `SET session_replication_role =
+'replica'`, a bar this codebase's own SQL fixtures now have to clear
+deliberately for backdating (there is no HTTP path to backdate
+`observed_at`, and there should never be one). A market-integrity case in
+any status unconditionally blocks anonymization, regardless of retention
+age - retention never overrides an open investigation, and consent
+withdrawal never deletes anything by itself.
+
+**Ordinary Governance gained a community-scoped proposal type**
+(`RETENTION_POLICY_CHANGE`, `ordinary_proposal.definition_id` widened to
+nullable) specifically so enabling governance never silently freezes
+retention-policy changes with no proposal path to replace them - the same
+"don't half-wire a gate" discipline as everything else in this bounded
+context.
+
 ## Community extension boundary (FreeFolk Market and other distributions)
 
 Full design: `stir-doc/COMMUNITY_EXTENSION_GUIDE.md`,
