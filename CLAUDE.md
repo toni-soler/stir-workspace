@@ -215,6 +215,63 @@ retention-policy changes with no proposal path to replace them - the same
 "don't half-wire a gate" discipline as everything else in this bounded
 context.
 
+## Multi-source value evidence: LISTING, WANTED, COMMUNITY_SEED
+
+Full design: `stir-doc/MULTI_SOURCE_VALUE_EVIDENCE.md`. Validation:
+`VALIDATION_MULTI_SOURCE_VALUE_EVIDENCE.md`.
+
+LISTING/WANTED reuse the existing `Listing` entity (`direction`), gaining an
+opt-in, owner's-own indicative price and a purpose-specific unilateral
+consent (`ConsentService.LISTING_PURPOSE`, never the bilateral
+`AGREEMENT_PURPOSE`). **A later edit never rewrites an earlier
+observation** - `ListingRevision` (immutable, mirrors `AgreementSnapshot`)
+freezes every create/update, and a `reference_observation`'s `source_id`
+points at the revision, never the mutable `Listing.id`. `ListingEvidenceAdapter`
+is the *only* crossing point from listing into the reference bounded
+context, same role `ReferenceAcceptanceAdapter` already had for Agreements.
+
+**Economic lineage prevents one process from becoming several independent
+voices.** `reference_observation.economic_lineage_id` threads the
+originating `Listing.id` through LISTING/WANTED and any PROPOSAL/AGREEMENT
+descending from it (via `negotiation.listingId`) - no new UUID, the listing's
+own id is the correlation key. `EvidenceAnalysis` groups included
+observations by this key and reports `economicLineageCount`/
+`maximumLineageShare`, with a new `LINEAGE_CONCENTRATED` signal reusing the
+existing participant-share threshold rather than a second, invented number.
+
+**Each source stays its own bucket, never one blended weighting.**
+`reference_policy.listing_source_enabled`/`wanted_source_enabled` (both
+false by default) gate a *separate* `EvidenceAnalysis.analyze()` call per
+source (`Policy.forSource(...)`), folded into `snapshot()` as
+`listingEvidence`/`wantedEvidence` sub-objects - never merged into the
+AGREEMENT median/IQR. `sourceBreakdown` (raw per-source counts) is always
+computed, unconditionally, so a publisher can see "AGREEMENT: 18, LISTING:
+11, ..." without that ever being presented as 18+11 equally-weighted votes.
+A unilateral bucket (`requiresCounterparty=false`) skips relationship/pair-
+based independence checks (meaningless with one party) but is held to the
+exact same constitutional `minimumParticipantFloor`/`minimumObservationFloor`
+as AGREEMENT - widening the input surface never relaxes that floor.
+
+**Community Seed has no delegated-publisher path at all** - unlike every
+other publish/policy mutation in this codebase, `stir.community_seed` has
+exactly one writer, `ReferenceService.insertSeedDirect()`, callable only from
+`OrdinaryGovernanceService.execute()`'s approved-proposal dispatch. Platform
+SuperAdmin cannot propose, vote on, or execute a seed by virtue of being
+SuperAdmin, same `requireCommunityAuthority()` gate as everything else
+governance-related. A seed is never a market observation (no
+`reference_observation` row, no `economic_lineage_id`), and a later seed is
+always a new version - the previous one is never rewritten. Whether/how a
+superseded seed (`supersededByRealEvidence` fires once the AGREEMENT bucket
+itself reaches `SUFFICIENT_DATA`) should eventually stop being shown is an
+explicit, open **SPEC GAP** - not an automatic invalidation formula, and not
+something to improvise past.
+
+LISTING/WANTED are cheaper to fabricate than AGREEMENT - `MarketIntegrityService`
+gained seven new, still human-raised-only signal codes for that surface
+(listing spam, coordinated postings, temporal bursts, lineage manipulation,
+selective consent patterns, artificial seed orientation), same `SIGNAL ≠
+FINDING` discipline as `MARKET_INTEGRITY.md`.
+
 ## Community extension boundary (FreeFolk Market and other distributions)
 
 Full design: `stir-doc/COMMUNITY_EXTENSION_GUIDE.md`,
@@ -289,6 +346,12 @@ STIR's own `purpose=EXCHANGE`; do not invent or ship code that sends it.
    that. Fail-closed by design (`GOVERNANCE_CAPTURE_THREAT_MODEL.md`); a real
    design almost certainly needs out-of-band, real-world re-attestation of
    seat-holder identity before reinstating a credential.
+4. **Community Seed supersession rule** — a Community Seed's
+   `supersededByRealEvidence` flag (`MULTI_SOURCE_VALUE_EVIDENCE.md`) is a
+   live, honest signal that real AGREEMENT evidence now exists, deliberately
+   not an automatic invalidation formula. Whether/how a superseded seed
+   should eventually stop being shown, versus staying as historical context
+   forever, versus requiring a fresh governance vote to retire it, is open.
 
 If a task needs any of these, stop and present alternatives — do not design a
 private workaround.
