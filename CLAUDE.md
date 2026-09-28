@@ -370,6 +370,25 @@ seven independent custodians. The bootstrap UI says so; keep it saying so,
 and never let UI copy imply an independence guarantee that a same-device flow
 does not provide.
 
+A seat/Guardian may instead be backed by a real WebAuthn/hardware
+credential (`WEBAUTHN_HARDWARE_CUSTODY.md`) — `WebAuthnCrypto.java`
+verifies ES256/RS256/EdDSA assertions, attestation format `"none"` only (no
+trust chain, no metadata service), with the WebAuthn challenge bound to
+`base64url(SHA-256(domain-separated JCS payload))` so a captured assertion
+can't be replayed for a different proposal/community/tenant/seat, plus the
+authenticator's own `sign_count` for native clone/replay detection —
+stronger than governance-signer.js's non-extractable WebCrypto (the key
+material never touches this origin's JavaScript at all), still not an
+absolute guarantee for the same reason above. `CredentialEnvelope`
+generalizes both credential types through the same verification path;
+every new field is additive, so the Ed25519 path is unchanged for every
+existing call site. Known gap, not yet fixed: `CredentialRegistrar`
+(`governance.jsx`) has no raw "paste a public key obtained on another
+device" input, so `ROTATE_CREDENTIAL`/`REPLACE_CONTROLLER`'s incoming
+WebAuthn credential currently must be generated/registered on the same
+device driving that proposal's UI — bootstrap's own cross-device
+invitation/contribution paste flow is unaffected.
+
 ## Gates before declaring a domain increment done
 
 Backend: `mvn verify` with real PostgreSQL/Testcontainers (never skip the
