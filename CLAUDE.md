@@ -398,18 +398,30 @@ credential can insert an unsigned `market_constitution` row or a bare `FINAL`
 `market_integrity_case_event` with no prior `SIGNAL`/`UNDER_REVIEW` — no RLS policy or business
 check runs on `INSERT`, only on `UPDATE`/`DELETE`. `stir-doc/FULL_SYSTEM_AUDIT.md`'s `AUD-012`.
 
-A Phase 1 tamper-evident audit MVP (`stir-doc/VALIDATION_GOVERNED_STATE_AUDIT_MVP.md`,
-implemented in an isolated worktree, never merged) adds a `SECURITY DEFINER` trigger on 40/47 real
-`stir.*` tables, owned by a new `stir_audit_owner` role `idax_app`/`idax_admin` can never touch,
-writing an append-only, hash-chained `stir_audit.mutation_event` a separate `stir_auditor`
-credential (its own secret, read-only on `stir.*`) verifies. This **detects** both `AUD-012`
-attacks reproducibly - it does not prevent them, does not close `AUD-012`, and its
-`VerificationVerdict` enum has no `PASS_AUTHORIZED` value: a self-consistent SQL-fabricated
-governance history classifies at most `PASS_STRUCTURE_ONLY`, on purpose. `PASS_CRYPTO` was never
-implemented in Phase 1 (would require independently reimplementing Ed25519/WebAuthn + RFC 8785 JCS
-verification without depending on `SevenKeysCrypto`/`WebAuthnCrypto`, which would make the backend
-implicitly authoritative over the verifier's own results) - see the validation doc's SPEC GAP list
-before assuming any domain's classification means more than structural consistency.
+A Phase 1 tamper-evident audit MVP (`stir-doc/VALIDATION_GOVERNED_STATE_AUDIT_MVP.md`) adds a
+`SECURITY DEFINER` trigger on 40/47 real `stir.*` tables, owned by a new `stir_audit_owner` role
+`idax_app`/`idax_admin` can never touch, writing an append-only, hash-chained
+`stir_audit.mutation_event` a separate `stir_auditor` credential (its own secret, read-only on
+`stir.*`) verifies, plus a `stir-audit-verifier` process exposing `/health` (liveness) and
+`/security-status` (the durable canonical security alert, DB-backed, separate from any log line -
+see the validation doc's P1-R3-001 section). This **detects** both `AUD-012` attacks reproducibly -
+it does not prevent them, does not close `AUD-012`, and its `VerificationVerdict` enum has no
+`PASS_AUTHORIZED` value: a self-consistent SQL-fabricated governance history classifies at most
+`PASS_STRUCTURE_ONLY`, on purpose. `PASS_CRYPTO` was never implemented in Phase 1 (would require
+independently reimplementing Ed25519/WebAuthn + RFC 8785 JCS verification without depending on
+`SevenKeysCrypto`/`WebAuthnCrypto`, which would make the backend implicitly authoritative over the
+verifier's own results) - see the validation doc's SPEC GAP list before assuming any domain's
+classification means more than structural consistency.
+
+**`PHASE 1 INTERNAL IMPLEMENTATION GATE: ACCEPTED`** (2026-09-30) - after five independent
+adversarial reaudit rounds (`stir-doc/*_REVALIDATION_GOVERNED_STATE_AUDIT_PHASE1.md`,
+PRE-FIX/FOUND-FIXED-REVALIDATED evidence preserved unaltered in each), Codex's final independent
+verdict was `FASE 1 ACEPTABLE` and this MVP's commits were integrated into every repo's `main`
+(no squash, no rewrite - `git log` on each repo shows the full remediation history). This is an
+internal implementation-quality gate only: `AUD-012` remains **HIGH, open**, the system remains
+**NOT PILOT READY**, no external anchor or consumption gate exists, and Phase 2 has not started.
+"Accepted" means detection-only Phase 1, as designed and repeatedly adversarially tested, is now
+merged - never that the underlying `AUD-012` runtime-write vector is closed.
 
 ## Gates before declaring a domain increment done
 
