@@ -389,6 +389,28 @@ WebAuthn credential currently must be generated/registered on the same
 device driving that proposal's UI — bootstrap's own cross-device
 invitation/contribution paste flow is unaffected.
 
+## `idax_app` can write governed state directly (`AUD-012`, HIGH, open)
+
+`idax_app` (and `idax_backend`, which inherits it) keeps ordinary `INSERT` on 45/48 STIR tables
+even after V17 revoked all `idax_admin` DML — V17 closed the platform-admin vector
+(`AUD-004`/`AUD-006`), not the runtime-credential one. Anyone with SQL access under that
+credential can insert an unsigned `market_constitution` row or a bare `FINAL`
+`market_integrity_case_event` with no prior `SIGNAL`/`UNDER_REVIEW` — no RLS policy or business
+check runs on `INSERT`, only on `UPDATE`/`DELETE`. `stir-doc/FULL_SYSTEM_AUDIT.md`'s `AUD-012`.
+
+A Phase 1 tamper-evident audit MVP (`stir-doc/VALIDATION_GOVERNED_STATE_AUDIT_MVP.md`,
+implemented in an isolated worktree, never merged) adds a `SECURITY DEFINER` trigger on 40/47 real
+`stir.*` tables, owned by a new `stir_audit_owner` role `idax_app`/`idax_admin` can never touch,
+writing an append-only, hash-chained `stir_audit.mutation_event` a separate `stir_auditor`
+credential (its own secret, read-only on `stir.*`) verifies. This **detects** both `AUD-012`
+attacks reproducibly - it does not prevent them, does not close `AUD-012`, and its
+`VerificationVerdict` enum has no `PASS_AUTHORIZED` value: a self-consistent SQL-fabricated
+governance history classifies at most `PASS_STRUCTURE_ONLY`, on purpose. `PASS_CRYPTO` was never
+implemented in Phase 1 (would require independently reimplementing Ed25519/WebAuthn + RFC 8785 JCS
+verification without depending on `SevenKeysCrypto`/`WebAuthnCrypto`, which would make the backend
+implicitly authoritative over the verifier's own results) - see the validation doc's SPEC GAP list
+before assuming any domain's classification means more than structural consistency.
+
 ## Gates before declaring a domain increment done
 
 Backend: `mvn verify` with real PostgreSQL/Testcontainers (never skip the
