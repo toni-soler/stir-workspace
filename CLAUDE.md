@@ -435,6 +435,13 @@ against the local dev stack (`docker compose -p stir-dev`, see
 `stir-main/compose.yml`; `python scripts/update.py` pins vendor + rebuilds +
 health-checks + smoke-checks in one step). Stop any container you started for
 verification when done; leave what was already running alone.
+User manual: every increment that adds a screen, a button or a behaviour
+updates `stir-frontend/src/manual/index.html` (plain Spanish for non-technical
+users, served at `/extensions/stir/manual/`) in the same branch.
+`tests/manual.test.mjs` enforces the mechanical part: every route is in the
+screen index and every label the manual names exists in the Spanish UI. The
+explanation itself is reviewed by reading it. FreeFolk Market keeps its own
+manual (`frontend/src/manual/`) under the same rule.
 
 ## What Claude decides alone vs. escalates
 
